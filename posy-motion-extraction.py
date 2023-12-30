@@ -72,7 +72,13 @@ while(video_source.isOpened()):
     # first, just read the current frame
     have_frame, current_frame = video_source.read()
     if not have_frame:
-        break # video done, release() and destroy windows
+        if len(argv) == 2: # i.e. we have a video file
+            # reset to the start of the file and clear the delay queue
+            video_source.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            delay_queue = []
+            _, current_frame = video_source.read()
+        else:
+            break # video done, release() and destroy windows
 
 
     # We append the current frame to the end of the delay queue, then take the
