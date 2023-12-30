@@ -11,10 +11,6 @@ from sys import argv
 
 HORIZONTAL=1
 
-if len(argv) != 2:
-    print(f"usage: {argv[0]} <video file>")
-    exit(1)
-
 
 # Define the time/frame shifting buffer. The amount of shift is tracked as
 # `frame_shift` and we keep the frames in the `delay_queue` until they have been
@@ -37,21 +33,32 @@ def set_frame_shift(new_frame_shift):
         frame_shift = new_frame_shift
 
 
-# Name the main window so the user knows what they are looking at and the code
-# has a reference for the trackbar.
+# Open the specified video source and name the main window so the user knows
+# what they are looking at and the code has a reference for the trackbar.
 
-MAIN_WINDOW=path.basename(argv[1])
+if len(argv) == 1:
+    MAIN_WINDOW="webcam"
+    video_source = cv2.VideoCapture(0)
+elif len(argv) == 2:
+    if path.exists(argv[1]):
+        MAIN_WINDOW=path.basename(argv[1])
+        video_source = cv2.VideoCapture(argv[1])
+    else:
+        print(f"No such file: {argv[1]}")
+        exit(1)
+else:
+    print(f"usage: {argv[0]} [<video file>]")
+    print(f"    Opens the specified video file. If no video file is specified, open the conputer's webcam instead.")
+    exit(1)
+
 cv2.namedWindow(MAIN_WINDOW)
 cv2.createTrackbar("delay (frames)", MAIN_WINDOW, frame_shift, 100, set_frame_shift)
 
 
-# Open the video that was specified as command line argument, then process each
-# frame in turn.
-
-cap = cv2.VideoCapture(argv[1])
-while(cap.isOpened()):
+# Process each frame in turn.
+while(video_source.isOpened()):
     # first, just read the current frame
-    have_frame, current_frame = cap.read()
+    have_frame, current_frame = video_source.read()
     if not have_frame:
         break # video done, release() and destroy windows
 
@@ -73,20 +80,20 @@ while(cap.isOpened()):
     # If we get here, we have the current frame and a suitably delayed frame.
     # For easy debugging, show these side-by-side.
 
-    combined_frames = np.concatenate((current_frame, delayed_frame), axis=HORIZONTAL) 
+    combined_frames = np.concatenate((current_frame, delayed_frame), axis=HORIZONTAL)
 
 
     # The delayed image needs some processing, though. The first operation is to
     # invert it.
 
     inverted_frame = cv2.bitwise_not(delayed_frame)
-    combined_frames = np.concatenate((combined_frames, inverted_frame), axis=HORIZONTAL) 
+    combined_frames = np.concatenate((combined_frames, inverted_frame), axis=HORIZONTAL)
 
 
     # Then we blend the inverted and original frames, each at 50% alpha.
 
     blended_frame = cv2.addWeighted(current_frame, 0.5, inverted_frame, 0.5, 0)
-    combined_frames = np.concatenate((combined_frames, blended_frame), axis=HORIZONTAL) 
+    combined_frames = np.concatenate((combined_frames, blended_frame), axis=HORIZONTAL)
 
 
     # We can now render the frames.
@@ -98,6 +105,6 @@ while(cap.isOpened()):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
+video_source.release()
 cv2.destroyAllWindows()
 

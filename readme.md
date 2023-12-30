@@ -23,6 +23,8 @@ work on.
 The slider along the top of the main window allows you to control the time shift
 (in frames) of the motion extraction.
 
+Press `q` to exit the program.
+
 ## Background
 
 This is a quick implementation of video motion extraction, using the method
