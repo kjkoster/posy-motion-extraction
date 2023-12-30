@@ -33,8 +33,19 @@ def set_frame_shift(new_frame_shift):
         frame_shift = new_frame_shift
 
 
+# Define the mixing proportions between the processed frame and the current frame in percentages.
+
+processed_proportion=50
+
+def set_processed_proportion(new_processed_proportion):
+    global processed_proportion
+    processed_proportion = new_processed_proportion
+
+
 # Open the specified video source and name the main window so the user knows
-# what they are looking at and the code has a reference for the trackbar.
+# what they are looking at and the code has a reference for the trackbars. With
+# this information, build the basic layout of the main window and attach
+# trackbar callbacks to handle user input.
 
 if len(argv) == 1:
     MAIN_WINDOW="webcam"
@@ -52,7 +63,8 @@ else:
     exit(1)
 
 cv2.namedWindow(MAIN_WINDOW)
-cv2.createTrackbar("delay (frames)", MAIN_WINDOW, frame_shift, 100, set_frame_shift)
+cv2.createTrackbar("delay (frames)",        MAIN_WINDOW, frame_shift,          100, set_frame_shift)
+cv2.createTrackbar("mix current/processed", MAIN_WINDOW, processed_proportion, 100, set_processed_proportion)
 
 
 # Process each frame in turn.
@@ -92,7 +104,9 @@ while(video_source.isOpened()):
 
     # Then we blend the inverted and original frames, each at 50% alpha.
 
-    blended_frame = cv2.addWeighted(current_frame, 0.5, inverted_frame, 0.5, 0)
+    mix_processed = processed_proportion / 100.0
+    mix_current = 1.0 - mix_processed
+    blended_frame = cv2.addWeighted(current_frame, mix_current, inverted_frame, mix_processed, 0)
     combined_frames = np.concatenate((combined_frames, blended_frame), axis=HORIZONTAL)
 
 
